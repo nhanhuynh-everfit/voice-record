@@ -1,114 +1,149 @@
 <!DOCTYPE html>
 <html>
 ​
+
 <head>
-  <title>Record and download audio</title>
+    <title>Record and download audio</title>
 </head>
 ​
+
 <body>
-  <button id="record">Record</button>
-  <button id="stop">Stop</button>
-  <button id="pause">Pause</button>
-  <button id="resume">Resume</button>
-  <button id="play">Play</button>
-  <button id="save">Download</button>
-​
-  <script>
-    const recordAudio = () =>
-      new Promise(async resolve => {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const mediaRecorder = new MediaRecorder(stream);
-        let audioChunks = [];
-​
-        mediaRecorder.addEventListener('dataavailable', event => {
-          audioChunks.push(event.data);
-        });
-​
-        const start = () => {
-          audioChunks = [];
-          mediaRecorder.start();
+    <button id="record">Record</button>
+    <button id="stop">Stop</button>
+    <button id="pause">Pause</button>
+    <button id="resume">Resume</button>
+    <button id="play">Play</button>
+    <button id="save">Download</button>
+    <audio id="audio" controls="controls">
+        <source id="audioSource" src="">
+        </source>
+        Your browser does not support the audio format.
+    </audio>
+
+    ​
+    <script>
+        const recordAudio = () => {
+            return new Promise(async resolve => {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const mediaRecorder = new MediaRecorder(stream);
+                let audioChunks = [];
+                mediaRecorder.addEventListener('dataavailable', event => {
+                    audioChunks.push(event.data);
+                });
+
+                const start = () => {
+                    audioChunks = [];
+                    mediaRecorder.start();
+                };
+
+
+                // Download file
+                const download = name => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
+                    const url = URL.createObjectURL(audioBlob);
+                    const a = document.createElement('a');
+                    document.body.appendChild(a);
+                    a.style = 'display: none';
+                    a.href = url;
+                    a.download = `${name}.mp3`;
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                };
+
+                const stop = () => {
+                    mediaRecorder.stop();
+                };
+
+                const play = () => {
+                    new Promise(resolve => {
+                        const audioBlob = getBlob();
+                        const audioUrl = URL.createObjectURL(audioBlob);
+                        const audio = new Audio(audioUrl);
+                        const play = () => audio.play();
+                        play();
+                    });
+                };
+
+                const resume = () => {
+                    mediaRecorder.resume();
+                };
+
+                const pause = () => {
+                    mediaRecorder.pause();
+                };
+
+                // Get blob to upload file
+                const getBlob = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
+                    return audioBlob;
+                };
+
+                // Get current file recorded in local
+                const getLocalUrl = () => {
+                    const audioBlob = getBlob();
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    return audioUrl
+                }
+
+                resolve({ start, stop, pause, resume, download, play, getBlob, getLocalUrl, chunks: audioChunks });
+            });
         };
-​
-        const download = (name) => {
-          const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-          const url = URL.createObjectURL(audioBlob);
-          const a = document.createElement("a");
-          document.body.appendChild(a);
-          a.style = "display: none";
-          a.href = url;
-          a.download = `${name}.webm`;
-          a.click();
-          window.URL.revokeObjectURL(url);
-        }
-​
-        const stop = () => {
-          mediaRecorder.stop();
-        }
-​
-        const play = () => {
-          new Promise(resolve => {
-            const audioBlob = new Blob(audioChunks, { type: 'audio/mpeg' });
-            const audioUrl = URL.createObjectURL(audioBlob);
-            const audio = new Audio(audioUrl);
-            const play = () => audio.play();
-            play()
-          });
-        }
-​
-        const resume = () => {
-​
-          mediaRecorder.resume();
-        }
-​
-        const pause = () => {
-          mediaRecorder.pause();
-        }
-​
-​
-        resolve({ start, stop, pause, resume, download, play, chunks: audioChunks });
-      });
-​
-    const sleep = time => new Promise(resolve => setTimeout(resolve, time));
-​
-    const recordButton = document.querySelector('#record');
-    const stopButton = document.querySelector('#stop');
-    const playButton = document.querySelector('#play');
-    const saveButton = document.querySelector('#save');
-    const pauseButton = document.querySelector('#pause');
-    const resumeButton = document.querySelector('#resume');
-    const savedAudioMessagesContainer = document.querySelector('#saved-audio-messages');
-​
-    let recorder;
-    let audio;
-​
-    recordButton.addEventListener('click', async () => {
-      if (!recorder) {
-        recorder = await recordAudio();
-      }
-      recorder.start();
-    });
-​
-    stopButton.addEventListener('click', () => {
-      recorder.stop();
-    });
-​
-    playButton.addEventListener('click', () => {
-      recorder.play();
-    });
-​
-    pauseButton.addEventListener('click', () => {
-      recorder.pause();
-    });
-​
-    resumeButton.addEventListener('click', () => {
-      recorder.resume();
-    });
-​
-    saveButton.addEventListener('click', () => {
-      recorder.download('test_audio')
-    });
-​
-  </script>
+
+
+        const sleep = time => new Promise(resolve => setTimeout(resolve, time));
+
+        const recordButton = document.querySelector('#record');
+        const stopButton = document.querySelector('#stop');
+        const playButton = document.querySelector('#play');
+        const saveButton = document.querySelector('#save');
+        const pauseButton = document.querySelector('#pause');
+        const resumeButton = document.querySelector('#resume');
+        const blobButton = document.querySelector('#getBlob');
+        const media = document.querySelector('#link');
+        const savedAudioMessagesContainer = document.querySelector('#saved-audio-messages');
+
+
+        let recorder;
+        let audio;
+
+        recordButton.addEventListener('click', async () => {
+            if (!recorder) {
+                recorder = await recordAudio();
+            }
+            recorder.start();
+        });
+
+        stopButton.addEventListener('click', () => {
+            recorder.stop();
+        });
+
+        playButton.addEventListener('click', () => {
+            recorder.play();
+        });
+
+        pauseButton.addEventListener('click', () => {
+            recorder.pause();
+        });
+
+        resumeButton.addEventListener('click', () => {
+            recorder.resume();
+        });
+
+        saveButton.addEventListener('click', () => {
+            recorder.download('test_audio')
+        });
+
+        playButton.addEventListener('click', () => {
+            var audio = document.getElementById('audio');
+            var source = document.getElementById('audioSource');
+            const data = recorder.getLocalUrl()
+            source.src = data;
+            audio.load();
+            audio.play();
+        });
+
+    </script>
 </body>
 ​
+
 </html>
